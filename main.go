@@ -13,14 +13,32 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"strings"
 	"time"
 )
 
-// version is overridable at build time:
+// version is stamped at build time for release binaries:
 //
 //	go build -ldflags "-X main.version=1.2.3"
-var version = "dev"
+//
+// When it is not stamped, which is what happens with `go install
+// module@version`, the module version recorded in the binary is used instead,
+// so an installed copy still reports something truthful.
+var version = ""
+
+func init() {
+	if version != "" {
+		return
+	}
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		if v := bi.Main.Version; v != "" && v != "(devel)" {
+			version = v
+			return
+		}
+	}
+	version = "dev"
+}
 
 type command struct {
 	name    string
