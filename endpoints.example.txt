@@ -1,0 +1,112 @@
+# endpoints.example.txt — copy this to endpoints.txt and edit.
+#
+# One target per line. Blank lines and lines starting with # are ignored.
+# A trailing # comment works too, as long as a space precedes it.
+
+# ---------------------------------------------------------------------------
+# defaults
+# ---------------------------------------------------------------------------
+# A `defaults` line sets the baseline for every target written BELOW it.
+# You can repeat it as often as you like to change the baseline part-way down.
+
+defaults interval=60s timeout=10s retries=0 redirects=10 expect=200-299
+
+# ---------------------------------------------------------------------------
+# the simple case
+# ---------------------------------------------------------------------------
+# A bare URL inherits every default. A bare hostname is assumed to be https.
+
+https://www.example.com/
+example.org
+
+# ---------------------------------------------------------------------------
+# per-target options
+# ---------------------------------------------------------------------------
+# Any default can be overridden per line. Quote values containing spaces
+# with " or '; escape a literal quote with a backslash.
+
+https://api.example.com/health   name="API health"  group=prod  interval=30s
+https://slow.example.com/        timeout=25s interval=1m
+https://flaky.example.com/       retries=2 retry_interval=5s
+
+# Require a phrase to appear in the response body. The status code alone will
+# not catch a site that "responds" while actually serving an error page, which
+# makes this the single most useful check available here.
+https://blog.example.com/        keyword="Welcome to my blog"
+
+# ...or that a phrase does NOT appear.
+https://shop.example.com/        keyword="Database connection failed" invert=true
+
+# Accept status codes other than 200-299.
+https://old.example.com/         expect=200-299,301,302
+https://teapot.example.com/      expect=418
+
+# Do not follow redirects: redirects=0 makes the 3xx itself the verdict.
+https://redirector.example.com/  redirects=0 expect=301,302
+
+# Send headers, including cookies or tokens.
+https://private.example.com/     header="Cookie: session=abc123"
+https://api.example.com/v2/ping  header="Authorization: Bearer TOKEN" header="Accept: application/json"
+
+# Other verbs, with a body.
+https://api.example.com/echo     method=POST body='{"ping":true}' header="Content-Type: application/json"
+
+# Self-signed or expired certificate you knowingly accept.
+https://internal.example.lan/    insecure=true
+
+# Keep a line in the file but stop probing it.
+https://retired.example.com/     enabled=false
+
+# Expect this to be UNREACHABLE, and report DOWN if it ever answers.
+# Useful for confirming a firewall rule is still doing its job.
+https://blocked.example.com/     upside_down=true
+
+# ---------------------------------------------------------------------------
+# non-HTTP targets
+# ---------------------------------------------------------------------------
+
+# ICMP echo. On Linux this needs no root if your gid is inside
+# net.ipv4.ping_group_range; otherwise uptime-mon substitutes a TCP connect
+# and tells you it did so.
+ping://1.1.1.1                   name=cloudflare-dns group=net
+ping://gateway.example.lan       group=net
+
+# Plain TCP connect: did the port accept a connection, and how fast?
+tcp://db.example.internal:5432   name=postgres group=db timeout=3s
+tcp://cache.example.internal:6379 name=redis   group=db
+
+# ---------------------------------------------------------------------------
+# grouping
+# ---------------------------------------------------------------------------
+# group= is a free-form label. It becomes a tag in the recorded data, prefixes
+# the name in the TUI, and can be filtered on:
+#
+#   uptime-mon stats -group prod
+#   uptime-mon run   -group db
+
+defaults group=eu-west interval=2m
+
+https://eu1.example.com/
+https://eu2.example.com/
+
+# ---------------------------------------------------------------------------
+# full option list
+# ---------------------------------------------------------------------------
+#   name=            display name (default: the URL)
+#   group=           free-form label used for filtering and grouping
+#   interval=        how often to probe        (30s, 1m, 5m, or a bare number of seconds)
+#   timeout=         give up after             (10s, 2.5s, ...)
+#   retries=         extra attempts before declaring DOWN
+#   retry_interval=  pause between those attempts
+#   redirects=       redirect budget; 0 means do not follow
+#   expect=          acceptable status codes   (200-299, 200-299,404, 418)
+#   insecure=        skip TLS verification     (true/false)
+#   keyword=         body must contain this text
+#   invert=          ...or must NOT contain it (true/false)
+#   method=          HTTP verb (default GET)
+#   header=          "Name: value"; repeat for several headers
+#   body=            request body
+#   ua=              User-Agent for this target
+#   max_body=        cap on body bytes read (default 1048576)
+#   upside_down=     invert the verdict        (true/false)
+#   enabled=         false to keep the line but stop probing

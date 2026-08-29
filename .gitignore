@@ -1,0 +1,12 @@
+# Your own monitor list and recorded data stay out of the repository.
+/endpoints.txt
+/data/
+*.lp
+*.lp.zst
+
+# Anything under .personal/ is yours alone (Uptime Kuma exports, notes).
+/.personal/
+
+# Build output
+/uptime-mon
+/dist/
